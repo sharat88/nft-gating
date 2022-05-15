@@ -124,10 +124,6 @@ const Home = () => {
         </button>
       )
     };
-  
-    // useEffect(() => {
-    //   checkWalletIsConnected();
-    // }, [])
 
     useEffect(() => {
         checkWalletIsConnected();
