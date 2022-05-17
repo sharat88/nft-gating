@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { createAlchemyWeb3 } from '@alch/alchemy-web3';
-import { hexToNumberString } from "web3-utils";
+import axios from 'axios';
 
-const alchemyApiBaseUrl = "<alchemy-base-url>";
-const alchemyApiKey = "<alchemy-api-key>";
+const openseaApiBaseUrl = "<opensea-api-base-url>";
 const nftContractAddress = "<nft-contract-address>";
 const nftTokenId = "<nft-token-id>";
 
@@ -55,52 +53,28 @@ const Home = () => {
         const { ethereum } = window;
   
         if (ethereum) {
-          console.log("Logged in user account address: ", currentAccount);
-
-          const web3 = createAlchemyWeb3(alchemyApiBaseUrl + alchemyApiKey);
-        
-          const nfts = await web3.alchemy.getNfts({
-            owner: currentAccount,
-            withMetadata: false,
-            contractAddresses: [
-              nftContractAddress
-            ]
-          });
-  
-          // Print contract address and tokenId for each NFT
-          for (const nft of nfts.ownedNfts) {
-            console.log("===");
-            console.log("Contract address:", nft.contract.address);
-            console.log("Token ID Hex:", nft.id.tokenId);
+            console.log("Logged in user account address: ", currentAccount);
             
-            const convertedTokenId = hexToNumberString(nft.id.tokenId);
-            
-            console.log('Token ID decimal: ' + convertedTokenId);
-            
-            // Fetch metadata for a particular NFT:
-            console.log("fetching metadata for NFT...");
-            const nftMetadata = await web3.alchemy.getNftMetadata({
-              contractAddress: nft.contract.address,
-              tokenId: nft.id.tokenId
-            })
-  
-            // Print some commonly used fields:
-            console.log("NFT name: ", nftMetadata.title);
-            console.log("Token type: ", nftMetadata.id.tokenMetadata.tokenType);
-            console.log("Token Uri: ", nftMetadata.tokenUri.gateway);
-            console.log("Image url: ", nftMetadata.metadata.image);
-            console.log("Time last updated: ", nftMetadata.timeLastUpdated);
+            axios.get(openseaApiBaseUrl + nftContractAddress + '/' + nftTokenId)
+                .then(res => {
+                  if(res.data) {
+                    const ownerships = res.data.top_ownerships;
 
-            // Route to Success page on validation
-            if(convertedTokenId === nftTokenId) {
-              navigate('/Success', { replace: true });
-            }
-          }
-  
-          //console.log("Allow access: " + allowAccess);
+                    for (const ownership of ownerships) {
+                        const ownerAddress = ownership.owner.address;
+                        console.log('NFT Owner Address: ' + ownerAddress);
 
-          setErrorMessage('You need this NFT.');
-  
+                        // Route to Success page on validation
+                        if(ownerAddress.toUpperCase() === currentAccount.toUpperCase()) {
+                            navigate('/Success', { replace: true });
+                        }
+                    }
+                  }
+
+                  setErrorMessage('You need this NFT.');
+                }).catch(function (error) {
+                    console.log('Error encountered during Opensea API call' + error);
+                });
         } else {
           console.log("Ethereum object does not exist");
         }
